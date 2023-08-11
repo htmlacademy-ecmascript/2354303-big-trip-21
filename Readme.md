@@ -1,7 +1,7 @@
 # Проект «Большое путешествие»
 
 * Студент: [Александра K](https://up.htmlacademy.ru/ecmascript/21/user/2354303).
-* Наставник: `Неизвестно`.
+* Наставник: [Александр Kонотоп](https://htmlacademy.ru/profile/sineway).
 
 ---
 
