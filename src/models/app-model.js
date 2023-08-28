@@ -55,6 +55,7 @@ class AppModel extends Model {
   /**
    * @param {PointModel} model
    * @returns {Promise<void>}
+   * метод обновления точки маршрута (WIP)
    */
   async updatePoint(model) {
     // TODO: Обновить данные на сервере
