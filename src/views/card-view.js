@@ -156,6 +156,7 @@ class CardView extends View {
    * @param {PointerEvent & {
   *  target: Element
   * }} event
+  * отправка события favorite
   */
   onClick(event) {
     if (event.target.closest('.event__rollup-btn')) {
