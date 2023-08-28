@@ -55,3 +55,21 @@
 * | 'restaurant'
 * )} PointType
 */
+/**
+ * @typedef {(
+*   'everything'
+* | 'future'
+* | 'present'
+* | 'past'
+* )} FilterType
+*/
+
+/**
+* @typedef {(
+*   'day'
+* | 'event'
+* | 'time'
+* | 'price'
+* | 'offers'
+* )} SortType
+*/

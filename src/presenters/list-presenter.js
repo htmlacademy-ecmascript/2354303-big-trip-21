@@ -13,18 +13,20 @@ class ListPresenter extends Presenter {
   constructor(...rest) {
     super(...rest);
 
-    // this.view.addEventListener('change', this.onViewChange.bind(this));
+    this.view.addEventListener('open', this.onViewOpen.bind(this));
+    this.view.addEventListener('close', this.onViewClose.bind(this));
   }
 
   /**
    * @override
    */
   updateView() {
+    const params = this.navigation.getParams();
     const points = this.model.getPoints();
     const destinations = this.model.getDestinations();
     const offerGroups = this.model.getOfferGroups();
 
-    const items = points.map((point, index) => {
+    const items = points.map((point) => {
       const {offers} = offerGroups.find((group) => group.type === point.type);
 
       return {
@@ -50,11 +52,66 @@ class ListPresenter extends Presenter {
         })),
 
         isFavorite: point.isFavorite,
-        isEditable: index === 1
+        isEditable: params.edit === point.id
       };
     });
 
     this.view.setState({items});
+  }
+
+  /**
+   * @param {import('../views/list-view').ItemState} state
+   * @returns {import('../models/point-model').default}
+   */
+  createPoint(state) {
+    const point = this.model.createPoint();
+
+    Object.assign(point, {
+      id: state.id,
+      type: state.types.find((type) => type.isSelected).value,
+      destinationId: state.destinations.find((destination) => destination.isSelected)?.id,
+      dateFrom: state.dateFrom,
+      dateTo: state.dateTo,
+      basePrice: state.basePrice,
+      offerIds: state.offers.filter((offer) => offer.isSelected).map((offer) => offer.id),
+      isFavorite: state.isFavorite
+    });
+
+    return point;
+  }
+
+  /**
+   * @param {CustomEvent & {
+   *  target: import('../views/card-view').default
+   * }} event
+   */
+  onViewOpen(event) {
+    const params = this.navigation.getParams();
+
+    params.edit = event.target.state.id;
+
+    this.navigation.setParams(params);
+  }
+
+  onViewClose() {
+    const params = this.navigation.getParams();
+
+    delete params.edit;
+
+    this.navigation.setParams(params);
+  }
+
+  /**
+   * @param {CustomEvent & {
+  *  target: import('../views/card-view').default
+  * }} event
+  */
+  async onViewFavorite(event) {
+    const card = event.target;
+
+    card.state.isFavorite = !card.state.isFavorite;
+    await this.model.updatePoint(this.createPoint(card.state));
+    card.render();
   }
 }
 
