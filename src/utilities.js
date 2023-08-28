@@ -1,3 +1,52 @@
+import dayjs from 'dayjs';
+import durationPlugin from 'dayjs/plugin/duration.js';
+
+dayjs.extend(durationPlugin);
+
+/** функция форматирования даты
+ * @param {dayjs.ConfigType} value
+ * @returns {string}
+ */
+function formatDate(value) {
+  return dayjs(value).format('MMM D');
+}
+
+/** функция форматирования времени
+ * @param {dayjs.ConfigType} value
+ * @returns {string}
+ */
+function formatTime(value) {
+  return dayjs(value).format('HH:mm');
+}
+
+/** функция для форматирования длительности
+ * @param {dayjs.ConfigType} valueFrom
+ * @param {dayjs.ConfigType} valueTo
+ * @returns {string}
+ */
+function formatDuration(valueFrom, valueTo) {
+  const ms = dayjs(valueTo).diff(valueFrom);
+  const duration = dayjs.duration(ms);
+
+  if (duration.days()) {
+    return duration.format('DD[d] HH[h] mm[m]');
+  }
+
+  if (duration.hours()) {
+    return duration.format('HH[h] mm[m]');
+  }
+
+  return duration.format('mm[m]');
+}
+
+/** функция для форматирования чисел
+ * @param {number} value
+ * @returns {string}
+ */
+function formatNumber(value) {
+  return value.toLocaleString('en');
+}
+
 /**
  * @param {TemplateStringsArray} strings
  * @param {...any} values
@@ -19,4 +68,10 @@ function html(strings, ...values) {
   });
 }
 
-export {html};
+export {
+  formatDate,
+  formatTime,
+  formatDuration,
+  formatNumber,
+  html
+};
