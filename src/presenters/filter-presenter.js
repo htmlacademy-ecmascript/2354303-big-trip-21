@@ -22,6 +22,7 @@ class FilterPresenter extends Presenter {
   updateView() {
     /**
      * @type {Array<FilterType>}
+     * формирует данные для FilterView
      */
     const values = ['everything', 'future', 'present', 'past'];
 

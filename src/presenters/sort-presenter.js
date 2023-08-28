@@ -22,6 +22,7 @@ class SortPresenter extends Presenter {
   updateView() {
     /**
      * @type {Array<SortType>}
+     * формирует данные для SortView
      */
     const values = ['day', 'event', 'time', 'price', 'offers'];
 
