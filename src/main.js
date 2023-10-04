@@ -8,6 +8,7 @@ import './views/ui-blocker-view.js';
 
 import AppModel from './models/app-model.js';
 import ApiService from './services/api-service.js';
+
 import BriefPresenter from './presenters/brief-presenter.js';
 import FilterPresenter from './presenters/filter-presenter.js';
 import AddButtonPresenter from './presenters/add-button-presenter.js';
