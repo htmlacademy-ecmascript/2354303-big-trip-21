@@ -1,12 +1,14 @@
 import Model from './model.js';
 import PointModel from './point-model.js';
-import points from '../data/points.json';
-import destinations from '../data/destination.json';
-import offerGroups from '../data/offers.json';
 
 class AppModel extends Model {
-  constructor() {
+  /**
+   * @param {import('../services/api-service').default} apiService
+   */
+  constructor(apiService) {
     super();
+
+    this.apiService = apiService;
 
     /**
      * @type {Array<Point>}
@@ -48,13 +50,22 @@ class AppModel extends Model {
    * @returns {Promise<void>}
    */
   async ready() {
-    // TODO: Получение данных с сервера
-    // @ts-ignore
-    this.points = points;
-    // @ts-ignore
-    this.destinations = destinations;
-    // @ts-ignore
-    this.offerGroups = offerGroups;
+    try {
+      const [points, destinations, offerGroups] = await Promise.all([
+        this.apiService.getPoints(),
+        this.apiService.getDestinations(),
+        this.apiService.getOfferGroups()
+      ]);
+
+      this.points = points;
+      this.destinations = destinations;
+      this.offerGroups = offerGroups;
+      this.dispatch('ready');
+
+    } catch (error) {
+      this.dispatch('error');
+      throw error;
+    }
   }
 
   /**
@@ -85,6 +96,19 @@ class AppModel extends Model {
   /**
    * @param {PointModel} model
    * @returns {Promise<void>}
+   */
+  async addPoint(model) {
+    // TODO: Добавить данные на сервере
+    const data = model.toJSON();
+
+    data.id = crypto.randomUUID();
+
+    this.points.push(data);
+  }
+
+  /**
+   * @param {PointModel} model
+   * @returns {Promise<void>}
    * метод обновления точки маршрута (WIP)
    */
   async updatePoint(model) {
@@ -93,6 +117,17 @@ class AppModel extends Model {
     const index = this.points.findIndex((point) => point.id === data.id);
 
     this.points.splice(index, 1, data);
+  }
+
+  /**
+   * @param {string} id
+   * @returns {Promise<void>}
+   */
+  async deletePoint(id) {
+    // TODO: Удалить данные на сервере
+    const index = this.points.findIndex((point) => point.id === id);
+
+    this.points.splice(index, 1);
   }
 
   /**
