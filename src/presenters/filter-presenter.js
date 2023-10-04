@@ -13,7 +13,7 @@ class FilterPresenter extends Presenter {
   constructor(...rest) {
     super(...rest);
 
-    // this.view.addEventListener('change', this.onViewChange.bind(this));
+    this.view.addEventListener('change', this.onViewChange.bind(this));
   }
 
   /**
@@ -25,14 +25,28 @@ class FilterPresenter extends Presenter {
      * формирует данные для FilterView
      */
     const values = ['everything', 'future', 'present', 'past'];
+    const {filter = 'everything'} = this.navigation.getParams();
 
     const items = values.map((value) => ({
       value,
-      isSelected: value === 'everything',
-      isDisabled: value === 'present'
+      isSelected: value === filter,
+      isDisabled: !this.model.getPoints({filter: value}).length
     }));
 
     this.view.setState({items});
+  }
+
+  /**
+   * @param {Event & {
+  *  target: HTMLInputElement & {
+  *    value: FilterType
+  *  }
+  * }} event
+  */
+  onViewChange(event) {
+    this.navigation.setParams({
+      filter: event.target.value
+    });
   }
 }
 

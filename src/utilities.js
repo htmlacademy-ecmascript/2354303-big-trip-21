@@ -1,14 +1,67 @@
 import dayjs from 'dayjs';
 import durationPlugin from 'dayjs/plugin/duration.js';
+import 'flatpickr/dist/flatpickr.css';
+import flatpickr from 'flatpickr';
+import {escape} from 'he';
 
 dayjs.extend(durationPlugin);
 
-/** функция форматирования даты
- * @param {dayjs.ConfigType} value
+/**функция создания календарей (WIP)
+ * @param {HTMLInputElement} inputFrom
+ * @param {HTMLInputElement} inputTo
+ * @returns {Function}
+ */
+function createCalendars(inputFrom, inputTo) {
+  /**
+   * @type {import('flatpickr/dist/types/options').Options}
+   */
+  const options = {
+    dateFormat: 'Z',
+    altInput: true,
+    altFormat: 'd/m/y H:i',
+    locale: {firstDayOfWeek: 1},
+    enableTime: true,
+    'time_24hr': true
+  };
+
+  const calendarFrom = flatpickr(inputFrom, options);
+  const calendarTo = flatpickr(inputTo, options);
+
+  calendarFrom.set('onChange', ([date]) => calendarTo.set('minDate', date));
+  calendarTo.set('minDate', calendarFrom.selectedDates.at(0));
+
+  return () => {
+    calendarFrom.destroy();
+    calendarTo.destroy();
+  };
+}
+
+/**
+ * @param {dayjs.ConfigType} valueFrom
+ * @param {dayjs.ConfigType} valueTo
  * @returns {string}
  */
-function formatDate(value) {
-  return dayjs(value).format('MMM D');
+function formatDateRange(valueFrom, valueTo) {
+  valueFrom = dayjs(valueFrom);
+  valueTo = dayjs(valueTo);
+
+  if (valueFrom.isSame(valueTo, 'day')) {
+    return formatDate(valueFrom);
+  }
+
+  return [
+    formatDate(valueFrom, valueFrom.isSame(valueTo, 'month')),
+    formatDate(valueTo)
+  ].join(' — ');
+}
+
+/** функция форматирования даты
+ * @param {dayjs.ConfigType} value
+ * @param {boolean} [isNarrow]
+ * @returns {string}
+ */
+function formatDate(value, isNarrow) {
+  return dayjs(value).format(isNarrow ? 'D' : 'D MMM');
 }
 
 /** функция форматирования времени
@@ -48,6 +101,20 @@ function formatNumber(value) {
 }
 
 /**
+ * @param {Array<string>} items
+ * @returns {string}
+ */
+function formatList(items) {
+  items = structuredClone(items);
+
+  if (items.length > 3) {
+    items.splice(1, items.length - 2, '...');
+  }
+
+  return items.join(' — ');
+}
+
+/**
  * @param {TemplateStringsArray} strings
  * @param {...any} values
  * @returns {string}
@@ -68,10 +135,38 @@ function html(strings, ...values) {
   });
 }
 
+/**
+ * @param {any} data
+ * @returns {any}
+ */
+function sanitize(data) {
+  switch (data?.constructor) {
+    case String:
+      return escape(data);
+
+    case Array:
+      return data.map(sanitize);
+
+    case Object:
+      return Object.keys(data).reduce((copy, key) => {
+        copy[key] = sanitize(data[key]);
+
+        return copy;
+      }, {});
+
+    default:
+      return data;
+  }
+}
+
 export {
+  createCalendars,
+  formatDateRange,
   formatDate,
   formatTime,
   formatDuration,
   formatNumber,
-  html
+  formatList,
+  html,
+  sanitize
 };

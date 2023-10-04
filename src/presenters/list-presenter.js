@@ -15,6 +15,10 @@ class ListPresenter extends Presenter {
 
     this.view.addEventListener('open', this.onViewOpen.bind(this));
     this.view.addEventListener('close', this.onViewClose.bind(this));
+    this.view.addEventListener('favorite', this.onViewFavorite.bind(this));
+    this.view.addEventListener('edit', this.onViewEdit.bind(this));
+    this.view.addEventListener('save', this.onViewSave.bind(this));
+    this.view.addEventListener('delete', this.onViewDelete.bind(this));
   }
 
   /**
@@ -22,9 +26,14 @@ class ListPresenter extends Presenter {
    */
   updateView() {
     const params = this.navigation.getParams();
-    const points = this.model.getPoints();
+    const points = this.model.getPoints(params);
+    const previousParams = this.navigation.getPreviousParams();
     const destinations = this.model.getDestinations();
     const offerGroups = this.model.getOfferGroups();
+
+    if (params.edit === 'draft') {
+      points.unshift(this.createDraftPoint());
+    }
 
     const items = points.map((point) => {
       const {offers} = offerGroups.find((group) => group.type === point.type);
@@ -52,11 +61,31 @@ class ListPresenter extends Presenter {
         })),
 
         isFavorite: point.isFavorite,
-        isEditable: params.edit === point.id
+        isEditable: params.edit === point.id,
+        isAnimated: params.edit === point.id || previousParams.edit === point.id
       };
     });
 
-    this.view.setState({items});
+    this.view.setState({
+      items,
+      isAnimated: !('edit' in params) && !('edit' in previousParams)
+    });
+  }
+
+  /**
+   * @returns {import('../models/point-model').default}
+   */
+  createDraftPoint() {
+    const point = this.model.createPoint();
+
+    Object.assign(point, {
+      id: 'draft',
+      type: 'flight',
+      basePrice: 0,
+      isFavorite: false
+    });
+
+    return point;
   }
 
   /**
@@ -67,7 +96,7 @@ class ListPresenter extends Presenter {
     const point = this.model.createPoint();
 
     Object.assign(point, {
-      id: state.id,
+      id: (state.id === 'draft') ? undefined : state.id,
       type: state.types.find((type) => type.isSelected).value,
       destinationId: state.destinations.find((destination) => destination.isSelected)?.id,
       dateFrom: state.dateFrom,
@@ -109,9 +138,119 @@ class ListPresenter extends Presenter {
   async onViewFavorite(event) {
     const card = event.target;
 
-    card.state.isFavorite = !card.state.isFavorite;
-    await this.model.updatePoint(this.createPoint(card.state));
-    card.render();
+    try {
+      card.state.isFavorite = !card.state.isFavorite;
+      await this.model.updatePoint(this.createPoint(card.state));
+      card.render();
+
+    } catch {
+      card.shake();
+    }
+  }
+
+  /**
+   * @param {CustomEvent<HTMLInputElement> & {
+  *  target: import('../views/editor-view').default
+  * }} event
+  */
+  onViewEdit(event) {
+    const editor = event.target;
+    const input = event.detail;
+
+    if (input.name === 'event-type') {
+      const offerGroups = this.model.getOfferGroups();
+      const {offers} = offerGroups.find((group) => group.type === input.value);
+
+      editor.state.offers = offers.map((offer) => ({
+        ...offer,
+        isSelected: false
+      }));
+
+      editor.state.types.forEach((type) => {
+        type.isSelected = type.value === input.value;
+      });
+
+      editor.render();
+      return;
+    }
+
+    if (input.name === 'event-destination') {
+      editor.state.destinations.forEach((destination) => {
+        destination.isSelected = destination.name === input.value;
+      });
+
+      editor.render();
+      return;
+    }
+
+    if (input.name === 'event-start-time') {
+      editor.state.dateFrom = input.value;
+      return;
+    }
+
+    if (input.name === 'event-end-time') {
+      editor.state.dateTo = input.value;
+      return;
+    }
+
+    if (input.name === 'event-price') {
+      editor.state.basePrice = Number(input.value);
+      return;
+    }
+
+    if (input.name === 'event-offer') {
+      editor.state.offers.some((offer) => {
+        if (offer.id === input.value) {
+          offer.isSelected = !offer.isSelected;
+          return true;
+        }
+      });
+    }
+  }
+
+  /**
+   * @param {CustomEvent & {
+   *  target: import('../views/editor-view').default
+   * }} event
+   */
+  async onViewSave(event) {
+    const editor = event.target;
+    const point = this.createPoint(editor.state);
+
+    try {
+      editor.setState({isSaving: true});
+
+      if (editor.state.id === 'draft') {
+        await this.model.addPoint(point);
+      } else {
+        await this.model.updatePoint(point);
+      }
+      editor.dispatch('close');
+
+    } catch {
+      editor.setState({isSaving: false});
+      editor.shake();
+    }
+    editor.dispatch('close');
+  }
+
+  /**
+   * @param {CustomEvent & {
+   *  target: import('../views/editor-view').default
+   * }} event
+   */
+  async onViewDelete(event) {
+    const editor = event.target;
+
+    try {
+      editor.setState({isDeleting: true});
+      await this.model.deletePoint(editor.state.id);
+      editor.dispatch('close');
+
+    } catch {
+      editor.setState({isDeleting: false});
+      editor.shake();
+    }
   }
 }
 

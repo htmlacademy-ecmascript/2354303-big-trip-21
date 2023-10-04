@@ -1,6 +1,6 @@
 import './editor-view.css';
 import View from './view.js';
-import {html} from '../utilities.js';
+import {html, createCalendars} from '../utilities.js';
 
 /**
  * @typedef {import('./list-view').ItemState} State
@@ -11,7 +11,15 @@ class EditorView extends View {
   constructor() {
     super();
 
+    /**
+     * @type {Function}
+     */
+
+    this.destroyCalendars = null;
     this.addEventListener('click', this.onClick);
+    this.addEventListener('change', this.onChange);
+    this.addEventListener('submit', this.onSubmit);
+    this.addEventListener('reset', this.onReset);
   }
 
   connectedCallback() {
@@ -19,7 +27,18 @@ class EditorView extends View {
   }
 
   disconnectedCallback() {
+    this.destroyCalendars();
     document.removeEventListener('keydown', this);
+  }
+
+  /**
+   * @override
+   */
+  render() {
+    this.destroyCalendars?.();
+    super.render();
+    // @ts-ignore
+    this.destroyCalendars = createCalendars(...this.querySelectorAll('.event__input--time'));
   }
 
   /**
@@ -161,7 +180,8 @@ class EditorView extends View {
         <input
           class="event__input  event__input--price"
           id="event-price-1"
-          type="text"
+          type="number"
+          min="0"
           name="event-price"
           value="${basePrice}">
       </div>
@@ -172,8 +192,14 @@ class EditorView extends View {
    * @returns {string}
    */
   createSubmitButtonHtml() {
+    const {isSaving} = this.state;
     return html`
-      <button class="event__save-btn  btn  btn--blue" type="submit">Save</button>
+    <button
+    class="event__save-btn  btn  btn--blue"
+    type="submit"
+    ${isSaving ? 'disabled' : ''}>
+    ${isSaving ? 'Saving...' : 'Save' }
+  </button>
     `;
   }
 
@@ -181,8 +207,20 @@ class EditorView extends View {
    * @returns {string}
    */
   createResetButtonHtml() {
+    const {id, isDeleting} = this.state;
+
+    if (id === 'draft') {
+      return html`
+        <button class="event__reset-btn" type="reset">Cancel</button>
+      `;
+    }
     return html`
-      <button class="event__reset-btn" type="reset">Cancel</button>
+    <button
+    class="event__reset-btn  btn"
+    type="reset"
+    ${isDeleting ? 'disabled' : ''}>
+    ${isDeleting ? 'Deleting...' : 'Delete'}
+  </button>
     `;
   }
 
@@ -190,6 +228,11 @@ class EditorView extends View {
    * @returns {string}
    */
   createCloseButtonHtml() {
+    const {id} = this.state;
+
+    if (id === 'draft') {
+      return '';
+    }
     return html`
       <button class="event__rollup-btn" type="button">
         <span class="visually-hidden">Close event</span>
@@ -241,7 +284,7 @@ class EditorView extends View {
     const {destinations} = this.state;
     const selectedDestination = destinations.find((destination) => destination.isSelected);
 
-    if (!selectedDestination) {
+    if (!selectedDestination || !selectedDestination.description) {
       return '';
     }
 
@@ -279,6 +322,33 @@ class EditorView extends View {
     if (event.key?.startsWith('Esc')) {
       this.dispatch('close');
     }
+  }
+
+  /**
+   * @param {Event & {
+  *   target: HTMLInputElement
+  * }} event
+  */
+  onChange(event) {
+    this.dispatch('edit', event.target);
+  }
+
+  /**
+   * @param {SubmitEvent} event
+   */
+  onSubmit(event) {
+    event.preventDefault();
+    this.dispatch('save');
+  }
+
+  /**
+     * @param {Event} event
+     */
+  onReset(event) {
+    const {id} = this.state;
+
+    event.preventDefault();
+    this.dispatch(id === 'draft' ? 'close' : 'delete');
   }
 }
 
