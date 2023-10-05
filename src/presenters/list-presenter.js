@@ -231,7 +231,6 @@ class ListPresenter extends Presenter {
       editor.setState({isSaving: false});
       editor.shake();
     }
-    editor.dispatch('close');
   }
 
   /**
