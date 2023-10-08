@@ -47,7 +47,7 @@ class AppModel extends Model {
   }
 
   /**
-   * @returns {Promise<void>}
+   * @returns {Promise<Error | void>}
    */
   async ready() {
     try {
@@ -64,7 +64,7 @@ class AppModel extends Model {
 
     } catch (error) {
       this.dispatch('error');
-      throw error;
+      return error;
     }
   }
 
